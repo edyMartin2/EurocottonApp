@@ -1,0 +1,68 @@
+﻿@page "/"
+@using System.Text.Json
+@using System.Text.Json.Serialization;
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>Generar Guia</PageTitle>
+
+<h1>Nueva Guia</h1>
+
+
+<input value="@inputValue" @onchange="@((ChangeEventArgs e) => inputValue = e?.Value?.ToString() )" placeholder="ID de Orden">
+<button class="btn btn-primary" @onclick="IncrementCount"> Generar </button>
+
+<h2>@messages</h2>
+
+
+@code {
+    private int currentCount = 0;
+    private string? messages { get; set; } = "....";
+    private string? inputValue { get; set; } = "";
+
+    [Parameter]
+    public int IncrementAmount { get; set; } = 0;
+    private void IncrementCount()
+    {
+        if (inputValue != "")
+        {
+            Console.WriteLine(inputValue);
+            GetnNew();
+            messages = "SUCCESS";
+        }
+        else
+        {
+            Console.WriteLine("No hay Id");
+        }
+    }
+
+
+    protected async Task GetnNew()
+    {
+        var Request = new HttpRequestMessage(HttpMethod.Get, "http://100.24.54.38:5000/cartaporteById?id=" + inputValue);
+        var client = ClientFactory.CreateClient();
+        Request.Headers.Add("Accept", "application/vnd.github.v3+json");
+        Request.Headers.Add("User-Agent", "HttpClientFactory-Sample");
+
+
+        var Res = await client.SendAsync(Request);
+
+
+        if (Res.IsSuccessStatusCode)
+        {
+            using var responseStream = await Res.Content.ReadAsStreamAsync();
+            messages = "SUCCESS";
+        }
+        else
+        {
+            messages = "ERROR";
+            Console.WriteLine(Res.IsSuccessStatusCode);
+        }
+    }
+
+
+    public class Message
+    {
+        [JsonPropertyName("message")]
+        public string message { get; set; }
+    }
+}

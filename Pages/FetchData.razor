@@ -1,0 +1,110 @@
+﻿@page "/fetchdata"
+@using System.Text.Json
+@using System.Text.Json.Serialization;
+@inject IHttpClientFactory ClientFactory
+
+<PageTitle>Guias Generadas</PageTitle>
+
+@using BlazorApp.Data
+@inject WeatherForecastService ForecastService
+
+<h1>Guias Generadas</h1>
+
+<p>Aqui podemos ver todas las guias generadas </p>
+
+@if (guias == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <table class="table">
+    <thead>
+        <tr>
+            <th>Orden</th>
+            <th>URL</th>
+            <th>Respuesta</th>
+            <th>Reenviar</th>
+            <th>Descargar</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var guia in guias)
+            {
+                <tr>
+                    <td>@guia.order_id</td>
+                    <td>@guia.traking_code</td>
+                    <td>@guia.response</td>
+                    <td><button onclick="Resend(@guia.id)">Reenviar</button></td>
+                    <td><button>Descargar</button></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+
+    private IEnumerable<Guias> guias = Array.Empty<Guias>();
+    protected override async Task OnInitializedAsync()
+    {
+        var Request = new HttpRequestMessage(HttpMethod.Get, "http://100.24.54.38:5000/guias");
+        var client = ClientFactory.CreateClient();
+        Request.Headers.Add("Accept", "application/vnd.github.v3+json");
+        Request.Headers.Add("User-Agent", "HttpClientFactory-Sample");
+
+
+        var Res = await client.SendAsync(Request);
+
+
+        if (Res.IsSuccessStatusCode)
+        {
+            using var responseStream = await Res.Content.ReadAsStreamAsync();
+            guias = await JsonSerializer.DeserializeAsync<IEnumerable<Guias>>(responseStream);
+        }
+        else
+        {
+            Console.WriteLine(Res.IsSuccessStatusCode);
+        }
+    }
+
+
+    protected async Task Reseend(int id)
+    {
+        var Request = new HttpRequestMessage(HttpMethod.Get, "http://100.24.54.38:5000/cartaporteById?id=" + id);
+        var client = ClientFactory.CreateClient();
+        Request.Headers.Add("Accept", "application/vnd.github.v3+json");
+        Request.Headers.Add("User-Agent", "HttpClientFactory-Sample");
+
+
+        var Res = await client.SendAsync(Request);
+
+
+        if (Res.IsSuccessStatusCode)
+        {
+            using var responseStream = await Res.Content.ReadAsStreamAsync();
+            //messages = "SUCCESS";
+        }
+        else
+        {
+            //messages = "ERROR";
+            Console.WriteLine(Res.IsSuccessStatusCode);
+        }
+    }
+
+
+    public class Guias
+    {
+        [JsonPropertyName("id")]
+        public int id { get; set; }
+
+        [JsonPropertyName("order_id")]
+        public string order_id { get; set; }
+        [JsonPropertyName("traking_code")]
+        public string traking_code { get; set; }
+
+        [JsonPropertyName("response")]
+        public string response { get; set; }
+
+    }
+}
